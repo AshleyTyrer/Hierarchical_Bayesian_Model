@@ -52,12 +52,13 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     ii = np.linspace(-1, 1, N)
 
     for j in range(N):
-        if ncoeff == 3:
-            iij = np.array((ii[j], ii[j] ** 2, ii[j] ** 3))
-        elif ncoeff == 4:
-            iij = np.array((ii[j], ii[j] ** 2, ii[j] ** 3, ii[j] ** 4))
-        elif ncoeff == 5:
-            iij = np.array((ii[j], ii[j]**2, ii[j]**3, ii[j]**4, ii[j]**5))
+        iij = np.array([np.power(ii[j], p) for p in range(1, ncoeff+1)])
+        # if ncoeff == 3:
+        #     iij = np.array((ii[j], ii[j] ** 2, ii[j] ** 3))
+        # elif ncoeff == 4:
+        #     iij = np.array((ii[j], ii[j] ** 2, ii[j] ** 3, ii[j] ** 4))
+        # elif ncoeff == 5:
+        #     iij = np.array((ii[j], ii[j]**2, ii[j]**3, ii[j]**4, ii[j]**5))
 
         alpha_true[j] = 1 + np.dot(iij, w_true)
         print(alpha_true[j])
