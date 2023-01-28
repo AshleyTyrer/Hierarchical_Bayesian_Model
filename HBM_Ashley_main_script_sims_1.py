@@ -167,4 +167,4 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     # data_format.save_model_pkl(
     #     w_true, sigma,
     #     [est_params_sigma, est_params_alpha, est_params_beta_hat, est_params_wmap, beta_corr, y_corr, alpha_corr,
-    #      w_true, sigma, y, y_map, beta_true, alpha_true, X])
+    #      w_true, sigma, y, y_map, beta_true, alpha_true, X, model_accuracy])
