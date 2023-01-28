@@ -19,6 +19,18 @@ from Maximum_aposteriori_model import MaximumAPosterioriModel
 from platform import python_version
 assert pyro.__version__.startswith("1.8")  # I'm writing this tutorial with version
 
+
+def compute_accuracy(y_true, y_pred):
+    correctly_predicted = 0
+    # iterating over every label and checking it with the true sample
+    for true_label, predicted in zip(y_true, y_pred):
+        if true_label == predicted:
+            correctly_predicted += 1
+    # computing the accuracy score
+    accuracy_score = correctly_predicted / len(y_true)
+    return accuracy_score
+
+
 N, T, p = 200, 100, 3  # will change depending on real data used, will define data size if using synthetic data
 
 # Cycle through different parameter combinations
@@ -134,6 +146,8 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     y_corr = np.corrcoef(y.flatten(), y_map.flatten())
     alpha_nump = alpha.detach().numpy()
     alpha_corr = np.corrcoef(alpha_true.flatten(), alpha_nump.flatten())
+
+    model_accuracy = compute_accuracy(y, y_map)
 
     est_params_sigma = sigma
     for j in range(N):
