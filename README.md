@@ -1,1 +1,1 @@
-# Hierarchical_Bayesian_Model
+# Hierarchical Bayesian Model
