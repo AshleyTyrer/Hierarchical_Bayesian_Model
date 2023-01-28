@@ -5,6 +5,7 @@
 
 import os
 from functools import partial
+from sklearn.metrics import r2_score
 import torch
 import numpy as np
 import matplotlib
@@ -20,15 +21,19 @@ from platform import python_version
 assert pyro.__version__.startswith("1.8")  # I'm writing this tutorial with version
 
 
-def compute_accuracy(y_true, y_pred):
-    correctly_predicted = 0
+def compute_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+    """For calculating an accuracy score for each time point
+    Args:
+        y_true: numpy array dimensions (num trials, num timepoints)
+        y_pred: numpy array dimensions (num trials, num timepoints)
+    Returns:
+        numpy array dimensions (num timepoints)"""
+    num_trials, num_timepoints = y_true.shape
+    r2_scores: np.ndarray = np.zeros(num_timepoints)
     # iterating over every label and checking it with the true sample
-    for true_label, predicted in zip(y_true, y_pred):
-        if true_label == predicted:
-            correctly_predicted += 1
-    # computing the accuracy score
-    accuracy_score = correctly_predicted / len(y_true)
-    return accuracy_score
+    for timepoint, (actual, predicted) in enumerate(zip(y_true, y_pred)):
+        r2_scores[timepoint] = r2_score(y_true, y_pred)
+    return r2_scores
 
 
 N, T, p = 200, 100, 3  # will change depending on real data used, will define data size if using synthetic data
@@ -51,7 +56,6 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     ncoeff = len(w_true)
 
     map_model = MaximumAPosterioriModel(ncoeff)
-    data_format = DataFormatSaver(N, T, p, run_num)
 
     est_params_alpha = np.zeros(N)
     est_params_beta_hat = np.zeros((N, p))
@@ -96,6 +100,7 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     dp = DataPlotterSaver(num_subs=1, which_model=1)
 
     fig = plt.figure()
+    data_format = DataFormatSaver(N, T, p, run_num)
     dp.betas_heatmap_plotting(fig, beta_true, 2, 1, 1)
     dp.alpha_line_plotting(fig, alpha_true, 2, 1, 2)
     data_format.save_figure(w_true, sigma, 'true')
