@@ -17,23 +17,10 @@ from pyro.infer import SVI, Trace_ELBO
 from DataFormat_Saver import DataFormatSaver
 from DataPlotter_Saver import DataPlotterSaver
 from Maximum_aposteriori_model import MaximumAPosterioriModel
+from SetParameters import SetParameters
+import utils
 from platform import python_version
 assert pyro.__version__.startswith("1.8")  # I'm writing this tutorial with version
-
-
-def compute_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-    """For calculating an accuracy score for each time point
-    Args:
-        y_true: numpy array dimensions (num trials, num timepoints)
-        y_pred: numpy array dimensions (num trials, num timepoints)
-    Returns:
-        numpy array dimensions (num timepoints)"""
-    num_trials, num_timepoints = y_true.shape
-    r2_scores: np.ndarray = np.zeros(num_timepoints)
-    # iterating over every label and checking it with the true sample
-    for timepoint, (actual, predicted) in enumerate(zip(y_true.T, y_pred.T)):
-        r2_scores[timepoint] = r2_score(actual, predicted)
-    return r2_scores
 
 
 N, T, p = 200, 100, 3  # will change depending on real data used, will define data size if using synthetic data
@@ -53,9 +40,12 @@ for w_sim, sigma_sim, run_num in loop_through_this:
 
     w_true = np.array(w_sim)
     sigma = sigma_sim
+
     ncoeff = len(w_true)
 
-    map_model = MaximumAPosterioriModel(ncoeff)
+    alpha_shape = 'polynomial'
+
+    map_model = MaximumAPosterioriModel(ncoeff, alpha_shape)
 
     est_params_alpha = np.zeros(N)
     est_params_beta_hat = np.zeros((N, p))
@@ -64,19 +54,13 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     # Data for the time-varying regression - generate random synthetic data
     X = np.random.normal(np.zeros((N, T, p)), np.ones((N, T, p)))
 
-    alpha_true = np.zeros((N,))
-    ii = np.linspace(-1, 1, N)
+    setparam = SetParameters(ncoeff, alpha_shape, N)
+    w_tensor = torch.tensor(w_sim, dtype=torch.float)
+    alpha_true_ten = setparam.polynomial_alpha(w_tensor)
+    alpha_true = alpha_true_ten.detach().numpy()
 
     for j in range(N):
-        iij = np.array([np.power(ii[j], p) for p in range(1, ncoeff+1)])
-        # if ncoeff == 3:
-        #     iij = np.array((ii[j], ii[j] ** 2, ii[j] ** 3))
-        # elif ncoeff == 4:
-        #     iij = np.array((ii[j], ii[j] ** 2, ii[j] ** 3, ii[j] ** 4))
-        # elif ncoeff == 5:
-        #     iij = np.array((ii[j], ii[j]**2, ii[j]**3, ii[j]**4, ii[j]**5))
-
-        alpha_true[j] = 1 + np.dot(iij, w_true)
+        # iij = np.array([np.power(ii[j], p) for p in range(1, ncoeff+1)])
         print(alpha_true[j])
 
     beta0 = np.random.normal(np.zeros((p,)), np.ones((p,)))
@@ -119,12 +103,9 @@ for w_sim, sigma_sim, run_num in loop_through_this:
         beta_hat[:, j] = beta_hat[:, j - 1] + beta_grad_map
 
     w_map = pyro.param("w_map")
-    alpha = torch.zeros((N,))
-    ii = torch.linspace(-1, 1, N)
+    alpha = setparam.polynomial_alpha(w_map)
 
     for j in range(N):
-        iij = torch.tensor((ii[j], ii[j] ** 2, ii[j] ** 3, ii[j] ** 4, ii[j] ** 5))
-        alpha[j] = 1 + torch.dot(iij, w_map)
         print(alpha[j])
 
     alphas_concat = [np.concatenate((alpha_true, alpha.detach().numpy()))]
@@ -153,7 +134,7 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     alpha_nump = alpha.detach().numpy()
     alpha_corr = np.corrcoef(alpha_true.flatten(), alpha_nump.flatten())
 
-    model_accuracy = compute_accuracy(y, y_map)
+    model_accuracy = utils.compute_accuracy(y, y_map)
 
     est_params_sigma = sigma
     for j in range(N):
@@ -164,7 +145,7 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     for n in range(ncoeff):
         est_params_wmap[n] = w_map[n]
 
-    # data_format.save_model_pkl(
-    #     w_true, sigma,
-    #     [est_params_sigma, est_params_alpha, est_params_beta_hat, est_params_wmap, beta_corr, y_corr, alpha_corr,
-    #      w_true, sigma, y, y_map, beta_true, alpha_true, X, model_accuracy])
+    data_format.save_model_pkl(
+        w_true, sigma,
+        [est_params_sigma, est_params_alpha, est_params_beta_hat, est_params_wmap, beta_corr, y_corr, alpha_corr,
+         w_true, sigma, y, y_map, beta_true, alpha_true, X, model_accuracy])

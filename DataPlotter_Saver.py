@@ -259,3 +259,11 @@ class DataPlotterSaver:
 
         min_params_all, max_params_all, y_marg = self.calculate_plot_min_max(data_concat)
         plt.ylim(min_params_all - y_marg, max_params_all + y_marg)
+
+    @staticmethod
+    def accuracy_over_trial(accuracy):
+        """For plotting accuracy score (R2 score) for each time point within a trial, over all trials
+        Args:
+            accuracy: accuracy/R2 score, T x 1 vector"""
+
+        plt.plot(accuracy)

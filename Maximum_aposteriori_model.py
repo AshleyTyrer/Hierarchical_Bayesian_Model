@@ -5,17 +5,20 @@ import pyro.distributions as dist
 from pyro.infer import SVI, Trace_ELBO
 from typing import Dict, List, Optional
 from platform import python_version
+from SetParameters import SetParameters
 assert pyro.__version__.startswith("1.8")  # I'm writing this tutorial with version
 
 
 class MaximumAPosterioriModel:
 
-    def __init__(self, num_coeff):
+    def __init__(self, num_coeff, alpha_shape: str):
         """For initialising the MaximumAPosterioriModel object
         Args:
-            num_coeff: number of coefficients for modulating alpha shape, i.e. length of w"""
+            num_coeff: number of coefficients for modulating alpha shape, i.e. length of w
+            alpha_shape: string stating whether alpha will be polynomial or sigmoid"""
 
         self.ncoeff = num_coeff
+        self.alpha_shape = alpha_shape
 
     def model_map(self, x_model, y_model):
         """Encodes observations, latent random variables and parameters in the model
@@ -33,15 +36,27 @@ class MaximumAPosterioriModel:
         for i in range(self.ncoeff):
             w[i] = pyro.sample(f"w_{i}", dist.Normal(0.0, tau_w))
 
-        # learning weights per trial, computed using the learning coefficients
-        alpha = torch.zeros((N,))
-        ii = torch.linspace(-1, 1, N)
-
-        for j in range(N):
-            iij = torch.empty((self.ncoeff,))
+        if self.alpha_shape == 'sigmoid':
+            tau_w, tau_m = 8, 0.5
+            midpoint = torch.zeros((self.ncoeff,))
             for i in range(self.ncoeff):
-                iij[i] = ii[j] ** (i + 1)
-            alpha[j] = 1 + torch.dot(iij.double(), w.double())
+                midpoint[i] = pyro.sample(f"midpoint_{i}", dist.Normal(1.5, tau_m))
+
+        # learning weights per trial, computed using the learning coefficients
+        setparam = SetParameters(self.ncoeff, self.alpha_shape, N)
+        if self.alpha_shape == 'polynomial':
+            alpha = setparam.polynomial_alpha(w)
+        elif self.alpha_shape == 'sigmoid':
+            alpha = setparam.sigmoid_alpha(w, midpoint)
+
+        # alpha = torch.zeros((N,))
+        # ii = torch.linspace(-1, 1, N)
+        #
+        # for j in range(N):
+        #     iij = torch.empty((self.ncoeff,))
+        #     for i in range(self.ncoeff):
+        #         iij[i] = ii[j] ** (i + 1)
+        #     alpha[j] = 1 + torch.dot(iij.double(), w.double())
 
         # intercept
         intercept = pyro.sample("intercept", dist.Normal(0.0, 10.0))
@@ -100,13 +115,16 @@ class MaximumAPosterioriModel:
         beta_grad_init = (beta_end - beta_init) / (N - 1)
 
         # initial learning coefficients
-        w_init = torch.zeros((5,))
+        w_init = torch.zeros((self.ncoeff,))
 
         intercept_map = pyro.param("intercept_map", meany.clone().detach())
         beta_grad_map = pyro.param("beta_grad_map", beta_grad_init.clone().detach())
         beta0_map = pyro.param("beta0_map", beta_init.clone().detach())
         sigma_map = pyro.param("sigma_map", er.clone().detach())
         w_map = pyro.param("w_map", w_init.clone().detach())
+        if self.alpha_shape == 'sigmoid':
+            midpoint_init = torch.zeros((1,))
+            midpoint_map = pyro.param("midpoint_map", midpoint_init.clone().detach())
 
         pyro.sample("intercept", dist.Delta(intercept_map))
         pyro.sample("sigma", dist.Delta(sigma_map))
@@ -116,16 +134,18 @@ class MaximumAPosterioriModel:
 
         for i in range(self.ncoeff):
             pyro.sample(f"w_{i}", dist.Delta(w_map[i]))
+            if self.alpha_shape == 'sigmoid':
+                pyro.sample(f"midpoint_{i}", dist.Delta(midpoint_map[i]))
 
     @staticmethod
-    def train(model, guide, X_train_torch, y_train_torch, lr=0.001, n_steps=10001):
+    def train(model, guide, x_train_torch, y_train_torch, lr=0.001, n_steps=10001):
         """For training the model using stochastic variational inference (SVI)
         Args:
             model: encodes observations, latent random variables and parameters in the model
             guide: defines the variational distribution which serves as an approximation to the posterior
             lr: learning rate of model; = 0.001
             n_steps: number of steps/iterations; =  have used between 10001 - 40001
-            X_train_torch: values of X to be used in training trials
+            x_train_torch: values of X to be used in training trials
             y_train_torch: values of Y to be used in training trials"""
 
         pyro.clear_param_store()
@@ -133,6 +153,6 @@ class MaximumAPosterioriModel:
         svi = SVI(model, guide, adam, loss=Trace_ELBO())
 
         for step in range(n_steps):
-            loss = svi.step(X_train_torch, y_train_torch)
+            loss = svi.step(x_train_torch, y_train_torch)
             if step % 200 == 0:
                 print('[iter {}]  loss: {:.4f}'.format(step, loss))
