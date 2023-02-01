@@ -1,9 +1,6 @@
 import numpy as np
 import torch
 import pyro
-import pyro.distributions as dist
-from pyro.infer import SVI, Trace_ELBO
-from typing import Dict, List, Optional
 from platform import python_version
 from math import exp
 assert pyro.__version__.startswith("1.8")  # I'm writing this tutorial with version
@@ -12,9 +9,9 @@ assert pyro.__version__.startswith("1.8")  # I'm writing this tutorial with vers
 class SetParameters:
 
     def __init__(self, num_coeff, alpha_shape: str, n):
-        """For initialising the MaximumAPosterioriModel object
+        """For initialising the SetParameters object
         Args:
-            num_coeff: number of coefficients for modulating alpha shape, i.e. length of w
+            num_coeff: number of coefficients for modulating alpha shape/gradient, i.e. length of w
             alpha_shape: string stating whether alpha will be polynomial or sigmoid
             n: number of trials"""
 
@@ -51,3 +48,38 @@ class SetParameters:
             alpha[j] = 1 / (1 + exp(torch.matmul(-w, (ii[j] - m))))
 
         return alpha
+
+    def calculate_beta(self, beta_0, beta_grad, alpha, p):
+        """For calculating betas from beta_0, beta_grad and alpha
+        Args:
+            beta_0: initial condition of beta
+            beta_grad: gradient of beta
+            alpha: trial-by-trial 'learning' parameter
+            p: number of channels"""
+
+        if torch.is_tensor(beta_0):
+            beta = torch.zeros((p, self.numtrials))
+        else:
+            beta = np.zeros((p, self.numtrials))
+
+        beta[:, 0] = beta_0
+        for j in range(1, self.numtrials):
+            beta[:, j] = beta[:, j - 1] + alpha[j] * beta_grad
+
+        return beta
+
+    def calculate_y(self, x, beta, epsilon, t):
+        """For calculating y from the data (x), betas and noise (epsilon)
+        Args:
+            x: input data
+            beta: beta parameters
+            epsilon: noise term
+            t: time points per trial"""
+
+        y = np.zeros((self.numtrials, t))
+
+        for j in range(self.numtrials):
+            for tp in range(t):
+                y[j, tp] = np.dot(x[j, tp, :], beta[:, j]) + epsilon[j, tp]
+
+        return y

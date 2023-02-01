@@ -12,9 +12,9 @@ class DataFormatSaver:
     def __init__(self, n, t, p, run) -> None:
         """For initialising the DataFormatSaver object
         Args:
-            N: number of trials in dataset
-            T: number of timepoints per trial in dataset
-            P: number of channels/electrodes in dataset
+            n: number of trials in dataset
+            t: number of timepoints per trial in dataset
+            p: number of channels/electrodes in dataset
             run: repetition number of simulation"""
 
         self.doc_path = r"C:\Users\au699132\OneDrive - Aarhus Universitet\Documents"
@@ -67,12 +67,11 @@ class DataFormatSaver:
         with open(pkl_save_path, 'wb') as file_h:
             pickle.dump(objects, file_h)
 
-    def load_model_pkl(self, w_true: np.ndarray, sigma: float, midpoint: Optional[float] = None) -> List:
+    def load_model_pkl(self, w_true: np.ndarray, sigma: float) -> List:
         """For saving inferred parameter values per subject in .pkl file
         Args:
             w_true: true w parameter values
-            sigma: true value of sigma
-            midpoint: true value of midpoint in logistic function"""
+            sigma: true value of sigma"""
 
         w_params_shape = len(w_true)
         w_val_string = '_'.join([str(wv) for wv in w_true]).replace('.', '-')

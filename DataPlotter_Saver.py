@@ -1,8 +1,8 @@
-import os
 import numpy as np
-import pickle
+import matplotlib
 import matplotlib.pyplot as plt
 from typing import Dict, List, Tuple, Optional
+matplotlib.use('Agg')
 
 
 class DataPlotterSaver:
@@ -137,8 +137,6 @@ class DataPlotterSaver:
 
         self.beta_infs_1st_half[subject_index] = betas_1st_half
         self.beta_infs_2nd_half[subject_index] = betas_2nd_half
-
-        # return self.beta_infs_1st_half, self.beta_infs_2nd_half
 
     def axis_label_setting(self, w_true, sigma, midpoint_tru: Optional[float] = None) -> Tuple[str, str]:
         """For setting the tick labels for plot axes

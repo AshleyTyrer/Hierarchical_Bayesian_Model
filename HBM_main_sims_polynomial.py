@@ -2,18 +2,14 @@
 # Contributors: Ashley Tyrer, Diego Vidaurre
 # Centre of Functionally Integrative Neuroscience, Aarhus University
 # Created 12-06-2022
+# Edited by Ashley Tyrer, date of last edit: 01-02-2023
 
-import os
-from functools import partial
-from sklearn.metrics import r2_score
 import torch
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import pyro
-import pyro.distributions as dist
 from itertools import product
-from pyro.infer import SVI, Trace_ELBO
 from DataFormat_Saver import DataFormatSaver
 from DataPlotter_Saver import DataPlotterSaver
 from Maximum_aposteriori_model import MaximumAPosterioriModel
@@ -60,23 +56,14 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     alpha_true = alpha_true_ten.detach().numpy()
 
     for j in range(N):
-        # iij = np.array([np.power(ii[j], p) for p in range(1, ncoeff+1)])
         print(alpha_true[j])
 
     beta0 = np.random.normal(np.zeros((p,)), np.ones((p,)))
     beta_grad = np.random.normal(np.zeros((p,)), (1 / alpha_true.sum()) * np.ones((p,)))
-    beta_true = np.zeros((p, N))
-    beta_true[:, 0] = beta0
-
-    for j in range(1, N):
-        beta_true[:, j] = beta_true[:, j - 1] + alpha_true[j] * beta_grad
+    beta_true = setparam.calculate_beta(beta0, beta_grad, alpha_true, p)
 
     epsilon = sigma * np.random.normal(np.zeros((N, T)), np.ones((N, T)))
-    y = np.zeros((N, T))
-
-    for j in range(N):
-        for t in range(T):
-            y[j, t] = np.dot(X[j, t, :], beta_true[:, j]) + epsilon[j, t]
+    y = setparam.calculate_y(X, beta_true, epsilon, T)
 
     X_train_torch = torch.tensor(X, dtype=torch.float)
     y_train_torch = torch.tensor(y, dtype=torch.float)
@@ -96,17 +83,13 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     beta_grad_map = pyro.param("beta_grad_map").detach().numpy()
     beta0_map = pyro.param("beta0_map").detach().numpy()
 
-    beta_hat = np.zeros(beta_true.shape)
-    beta_hat[:, 0] = beta0_map
-
-    for j in range(1, N):
-        beta_hat[:, j] = beta_hat[:, j - 1] + beta_grad_map
-
     w_map = pyro.param("w_map")
     alpha = setparam.polynomial_alpha(w_map)
 
     for j in range(N):
         print(alpha[j])
+
+    beta_hat = setparam.calculate_beta(beta0_map, beta_grad_map, alpha, p)
 
     alphas_concat = [np.concatenate((alpha_true, alpha.detach().numpy()))]
     betas_concat = [np.concatenate((beta_true, beta_hat))]
@@ -124,11 +107,7 @@ for w_sim, sigma_sim, run_num in loop_through_this:
 
     sigma_map = pyro.param("sigma_map").detach().numpy()
     epsilon_map = sigma_map * np.random.normal(np.zeros((N, T)), np.ones((N, T)))
-    y_map = np.zeros((N, T))
-
-    for j in range(N):
-        for t in range(T):
-            y_map[j, t] = np.dot(X[j, t, :], beta_hat[:, j]) + epsilon_map[j, t]
+    y_map = setparam.calculate_y(X, beta_hat, epsilon_map, T)
 
     y_corr = np.corrcoef(y.flatten(), y_map.flatten())
     alpha_nump = alpha.detach().numpy()

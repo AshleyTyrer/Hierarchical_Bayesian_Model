@@ -3,8 +3,6 @@
 # Centre of Functionally Integrative Neuroscience, Aarhus University
 # Created 15-05-2022
 
-import os
-from functools import partial
 import torch
 import numpy as np
 import matplotlib

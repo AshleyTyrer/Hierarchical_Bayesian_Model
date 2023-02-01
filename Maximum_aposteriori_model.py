@@ -1,7 +1,7 @@
-import numpy as np
 import torch
 import pyro
 import pyro.distributions as dist
+from torch.distributions import constraints
 from pyro.infer import SVI, Trace_ELBO
 from typing import Dict, List, Optional
 from platform import python_version
@@ -28,19 +28,23 @@ class MaximumAPosterioriModel:
 
         sigma_mod = 1
         N, T, p = x_model.shape  # trials, time, and channels/ROIs
-        tau_grad, tau0, tau_w = (1 / N), 1, 1  # variance of the beta,w distributions
+        tau_grad, tau0 = (1 / N), 1  # variance of the beta distributions
         sigma_shape, sigma_rate = N * T, sigma_mod * N * T  # prior parameters for the noise distribution
-
-        # learning coefficients
-        w = torch.zeros((self.ncoeff,))
-        for i in range(self.ncoeff):
-            w[i] = pyro.sample(f"w_{i}", dist.Normal(0.0, tau_w))
 
         if self.alpha_shape == 'sigmoid':
             tau_w, tau_m = 8, 0.5
             midpoint = torch.zeros((self.ncoeff,))
             for i in range(self.ncoeff):
                 midpoint[i] = pyro.sample(f"midpoint_{i}", dist.Normal(1.5, tau_m))
+                # constrained to be within interval 0-3
+        else:
+            tau_w = 1
+
+        # learning coefficients
+        w = torch.zeros((self.ncoeff,))
+        for i in range(self.ncoeff):
+            w[i] = pyro.sample(f"w_{i}", dist.Normal(10.0, tau_w))
+            # constrained to be within interval 0-100
 
         # learning weights per trial, computed using the learning coefficients
         setparam = SetParameters(self.ncoeff, self.alpha_shape, N)
@@ -48,15 +52,6 @@ class MaximumAPosterioriModel:
             alpha = setparam.polynomial_alpha(w)
         elif self.alpha_shape == 'sigmoid':
             alpha = setparam.sigmoid_alpha(w, midpoint)
-
-        # alpha = torch.zeros((N,))
-        # ii = torch.linspace(-1, 1, N)
-        #
-        # for j in range(N):
-        #     iij = torch.empty((self.ncoeff,))
-        #     for i in range(self.ncoeff):
-        #         iij[i] = ii[j] ** (i + 1)
-        #     alpha[j] = 1 + torch.dot(iij.double(), w.double())
 
         # intercept
         intercept = pyro.sample("intercept", dist.Normal(0.0, 10.0))
@@ -70,15 +65,13 @@ class MaximumAPosterioriModel:
         for i in range(p):
             beta_grad[i] = pyro.sample(f"beta_grad_{i}", dist.Normal(0.0, tau_grad))
             beta0[i] = pyro.sample(f"beta0_{i}", dist.Normal(0.0, tau0))
-        beta = torch.zeros((p, N))
-        beta[:, 0] = beta0
+        beta = setparam.calculate_beta(beta0, beta_grad, alpha, p)
 
         # mean prediction
         mean = torch.zeros((N, T)) + intercept
         mean[0, :] = mean[0, :] + torch.matmul(x_model[0, :, :], beta[:, 0])
 
         for j in range(1, N):
-            beta[:, j] = beta[:, j - 1] + alpha[j] * beta_grad
             mean[j, :] = mean[j, :] + torch.matmul(x_model[j, :, :], beta[:, j])
 
         mean = mean.flatten()
@@ -121,10 +114,11 @@ class MaximumAPosterioriModel:
         beta_grad_map = pyro.param("beta_grad_map", beta_grad_init.clone().detach())
         beta0_map = pyro.param("beta0_map", beta_init.clone().detach())
         sigma_map = pyro.param("sigma_map", er.clone().detach())
-        w_map = pyro.param("w_map", w_init.clone().detach())
+        w_map = pyro.param("w_map", w_init.clone().detach(), constraint=constraints.interval(0.0, 100.0))
         if self.alpha_shape == 'sigmoid':
             midpoint_init = torch.zeros((1,))
-            midpoint_map = pyro.param("midpoint_map", midpoint_init.clone().detach())
+            midpoint_map = pyro.param("midpoint_map", midpoint_init.clone().detach(), constraint=constraints.interval(
+                0.0, 3.0))
 
         pyro.sample("intercept", dist.Delta(intercept_map))
         pyro.sample("sigma", dist.Delta(sigma_map))
