@@ -10,9 +10,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pyro
 from itertools import product
-from DataFormat_Saver import DataFormatSaver
-from DataPlotter_Saver import DataPlotterSaver
-from Maximum_aposteriori_model import MaximumAPosterioriModel
+from DataFormatSaver import DataFormatSaver
+from DataPlotter import DataPlotter
+from MaximumAPosterioriModel import MaximumAPosterioriModel
 from SetParameters import SetParameters
 import utils
 from platform import python_version
@@ -68,7 +68,7 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     X_train_torch = torch.tensor(X, dtype=torch.float)
     y_train_torch = torch.tensor(y, dtype=torch.float)
 
-    dp = DataPlotterSaver(num_subs=1, which_model=1)
+    dp = DataPlotter(num_subs=1, which_model=1)
 
     fig = plt.figure()
     data_format = DataFormatSaver(N, T, p, run_num)
@@ -114,6 +114,11 @@ for w_sim, sigma_sim, run_num in loop_through_this:
     alpha_corr = np.corrcoef(alpha_true.flatten(), alpha_nump.flatten())
 
     model_accuracy = utils.compute_accuracy(y, y_map)
+
+    fig = plt.figure()
+    dp.accuracy_over_trial(model_accuracy)
+    data_format.save_figure(w_true, sigma, 'tp_acc')
+    plt.close()
 
     est_params_sigma = sigma
     for j in range(N):

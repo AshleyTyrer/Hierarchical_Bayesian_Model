@@ -1,9 +1,16 @@
+# Class: DataFormatSaverSigmoid
+# For setting directories and formatting/saving data and figures, for model with sigmoid alpha
+# Contributors: Ashley Tyrer
+# Centre of Functionally Integrative Neuroscience, Aarhus University
+# Created 12-09-2022
+# Edited by Ashley Tyrer, date of last edit: 02-02-2023
+
 import os
 import numpy as np
 import pickle
 import matplotlib
 import matplotlib.pyplot as plt
-from typing import Dict, List
+from typing import List
 matplotlib.use('Agg')
 
 

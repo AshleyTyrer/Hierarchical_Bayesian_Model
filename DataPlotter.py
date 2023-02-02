@@ -1,3 +1,10 @@
+# Class: DataPlotter
+# For formatting data structures ready for plotting and creating/formatting plots using matplotlib
+# Contributors: Ashley Tyrer
+# Centre of Functionally Integrative Neuroscience, Aarhus University
+# Created 12-09-2022
+# Edited by Ashley Tyrer, date of last edit: 02-02-2023
+
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -5,7 +12,7 @@ from typing import Dict, List, Tuple, Optional
 matplotlib.use('Agg')
 
 
-class DataPlotterSaver:
+class DataPlotter:
 
     def __init__(self, num_subs, which_model) -> None:
         """For initialising the DataPlotterSaver object and defining attributes
@@ -33,7 +40,12 @@ class DataPlotterSaver:
         self.beta_infs_2nd_half = [np.nan] * num_subs
         self.X_data = [np.nan] * num_subs
 
-        self.which_model = which_model
+        if which_model == 'polynomial':
+            self.which_model = 1
+        elif which_model == 'sigmoid':
+            self.which_model = 2
+        else:
+            self.which_model = which_model
         self.num_subs = num_subs
 
     def define_data_objects_indices(self) -> Dict:
@@ -95,7 +107,7 @@ class DataPlotterSaver:
         self.X_data = data_objects[data_obj_dict['X_ind']]
 
         p, N = self.beta_infs[subject_index].shape
-        T = self.y_trues[subject_index].shape[1]
+        t = self.y_trues[subject_index].shape[1]
 
         self.split_betas_into_halves(subject_index, p, N)
 
@@ -105,35 +117,35 @@ class DataPlotterSaver:
             self.w_correlations[np.isnan(self.w_correlations)] = 0
             return [self.sigma_infs, self.alpha_infs, self.beta_infs, self.w_infs, self.beta_correlations,
                     self.y_correlations, self.alpha_correlations, self.w_trues, self.sigma_trues, self.y_trues,
-                    self.y_infs, self.beta_trues, self.alpha_trues, self.w_correlations, p, N, T,
+                    self.y_infs, self.beta_trues, self.alpha_trues, self.w_correlations, p, N, t,
                     self.beta_infs_1st_half, self.beta_infs_2nd_half]
         elif self.which_model == 2:
             self.midpoint_trues[subject_index] = data_obj_dict['m_tru_ind']
             self.midpoint_infs[subject_index] = data_obj_dict['m_inf_ind']
             return [self.sigma_infs, self.alpha_infs, self.beta_infs, self.w_infs, self.beta_correlations,
                     self.y_correlations, self.alpha_correlations, self.midpoint_infs, self.w_trues, self.sigma_trues,
-                    self.midpoint_trues, self.y_trues, self.y_infs, self.beta_trues, self.alpha_trues, p, N, T,
+                    self.midpoint_trues, self.y_trues, self.y_infs, self.beta_trues, self.alpha_trues, p, N, t,
                     self.beta_infs_1st_half, self.beta_infs_2nd_half]
         else:
             raise ValueError('Valid model number not entered')
 
-    def split_betas_into_halves(self, subject_index, p, N):
+    def split_betas_into_halves(self, subject_index, p, n):
         """For splitting the inferred betas into those from the first and second half of trials
         Args:
             subject_index: index of subject or parameter set
             p: number of channels
-            N: number of trials"""
+            n: number of trials"""
 
-        betas_1st_half = np.zeros(shape=(round(N / 2), p))
-        betas_2nd_half = np.zeros(shape=(round(N / 2) - 1, p))
+        betas_1st_half = np.zeros(shape=(round(n / 2), p))
+        betas_2nd_half = np.zeros(shape=(round(n / 2) - 1, p))
 
         beta_inf_sub = self.beta_infs[subject_index]
 
         for chan in range(p):
-            for n in range(round(N / 2)):
+            for n in range(round(n / 2)):
                 betas_1st_half[n, chan] = beta_inf_sub[chan, n]
-            for n in range((round(N / 2)) - 1):
-                betas_2nd_half[n, chan] = beta_inf_sub[chan, round(N / 2) + n]
+            for n in range((round(n / 2)) - 1):
+                betas_2nd_half[n, chan] = beta_inf_sub[chan, round(n / 2) + n]
 
         self.beta_infs_1st_half[subject_index] = betas_1st_half
         self.beta_infs_2nd_half[subject_index] = betas_2nd_half

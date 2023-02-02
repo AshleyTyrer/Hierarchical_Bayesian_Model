@@ -15,9 +15,9 @@ import time
 import pyro.distributions as dist
 from itertools import product
 from pyro.infer import SVI, Trace_ELBO
-from DataFormat_Saver_sigmoid import DataFormatSigmoidSaver
-from DataFormat_Saver import DataFormatSaver
-from DataPlotter_Saver import DataPlotterSaver
+from DataFormatSaverSigmoid import DataFormatSigmoidSaver
+from DataFormatSaver import DataFormatSaver
+from DataPlotter import DataPlotterSaver
 from platform import python_version
 assert pyro.__version__.startswith("1.8")  # I'm writing this tutorial with version
 

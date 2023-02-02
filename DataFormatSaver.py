@@ -1,9 +1,15 @@
+# Class: DataFormatSaver
+# For setting directories and formatting/saving data and figures
+# Contributors: Ashley Tyrer
+# Centre of Functionally Integrative Neuroscience, Aarhus University
+# Created 12-09-2022
+# Edited by Ashley Tyrer, date of last edit: 02-02-2023
+
 import os
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
-from typing import Dict, List, Optional
-from scipy.io import loadmat
+from typing import Dict, List
 from scipy.io import savemat
 
 

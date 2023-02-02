@@ -2,7 +2,7 @@
 # Contributors: Ashley Tyrer, Diego Vidaurre
 # Centre of Functionally Integrative Neuroscience, Aarhus University
 # Created 12-06-2022
-# Edited by Ashley Tyrer, date of last edit: 01-02-2023
+# Edited by Ashley Tyrer, date of last edit: 02-02-2023
 
 import torch
 import numpy as np
@@ -10,9 +10,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pyro
 from itertools import product
-from DataFormat_Saver_sigmoid import DataFormatSaverSigmoid
-from Maximum_aposteriori_model import MaximumAPosterioriModel
-from DataPlotter_Saver import DataPlotterSaver
+from DataFormatSaverSigmoid import DataFormatSaverSigmoid
+from MaximumAPosterioriModel import MaximumAPosterioriModel
+from DataPlotter import DataPlotter
 from SetParameters import SetParameters
 import utils
 from platform import python_version
@@ -74,7 +74,7 @@ for w_sim, sigma_sim, midpoint_sim, run_num in loop_through_this:
     X_train_torch = torch.tensor(X, dtype=torch.float)
     y_train_torch = torch.tensor(y, dtype=torch.float)
 
-    dp = DataPlotterSaver(num_subs=1, which_model=2)
+    dp = DataPlotter(num_subs=1, which_model=alpha_shape)
 
     fig = plt.figure()
     dp.betas_heatmap_plotting(fig, beta_true, 2, 1, 1)

@@ -1,3 +1,10 @@
+# Class: SetParameters
+# For calculating parameter estimates
+# Contributors: Ashley Tyrer
+# Centre of Functionally Integrative Neuroscience, Aarhus University
+# Created 30-01-2023
+# Edited by Ashley Tyrer, date of last edit: 02-02-2023
+
 import numpy as np
 import torch
 import pyro

@@ -1,3 +1,10 @@
+# Class: MaximumAPosterioriModel
+# For defining MAP model, setting parameter estimates and sample distributions
+# Contributors: Ashley Tyrer
+# Centre of Functionally Integrative Neuroscience, Aarhus University
+# Created 12-09-2022
+# Edited by Ashley Tyrer, date of last edit: 02-02-2023
+
 import torch
 import pyro
 import pyro.distributions as dist
@@ -24,7 +31,7 @@ class MaximumAPosterioriModel:
         """Encodes observations, latent random variables and parameters in the model
         Args:
             x_model: neural data in form: number of trials x timepoints x channels
-            y_model: behavior/continuous learning in form: number of trials x timepoints"""
+            y_model: behaviour/continuous learning in form: number of trials x timepoints"""
 
         sigma_mod = 1
         N, T, p = x_model.shape  # trials, time, and channels/ROIs
@@ -84,7 +91,7 @@ class MaximumAPosterioriModel:
         """Defines the variational distribution which serves as an approximation to the posterior
         Args:
             x_guide: neural data in form: number of trials x timepoints x channels
-            y_guide: behavior/continuous learning in form: number of trials x timepoints"""
+            y_guide: behaviour/continuous learning in form: number of trials x timepoints"""
 
         N, T, p = x_guide.shape
 
@@ -92,14 +99,14 @@ class MaximumAPosterioriModel:
         meany = y_guide.flatten().mean()
 
         # compute beta in the first trials and in the last trials
-        N_star = round(N / 10)
-        x0 = torch.reshape(x_guide[0:N_star, :, :], (N_star * T, p))
-        y0 = torch.reshape(y_guide[0:N_star, :], (N_star * T,))
+        n_star = round(N / 10)
+        x0 = torch.reshape(x_guide[0:n_star, :, :], (n_star * T, p))
+        y0 = torch.reshape(y_guide[0:n_star, :], (n_star * T,))
         R = 0.01 * torch.eye(p)
         beta_init = torch.matmul(torch.inverse(torch.matmul(x0.T, x0) + R), torch.matmul(x0.T, y0))
         er1 = torch.sum(torch.square(y0 - torch.matmul(x0, beta_init))) / N
-        x0 = torch.reshape(x_guide[-N_star:, :, :], (N_star * T, p))
-        y0 = torch.reshape(y_guide[-N_star:, :], (N_star * T,))
+        x0 = torch.reshape(x_guide[-n_star:, :, :], (n_star * T, p))
+        y0 = torch.reshape(y_guide[-n_star:, :], (n_star * T,))
         beta_end = torch.matmul(torch.inverse(torch.matmul(x0.T, x0) + R), torch.matmul(x0.T, y0))
         er2 = torch.sum(torch.square(y0 - torch.matmul(x0, beta_end))) / N
         er = (er1 + er2) / 2
