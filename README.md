@@ -1,8 +1,6 @@
 # Hierarchical Bayesian Model
-This repository contains two versions of a Hierarchical Bayesian Model. Version 1 estimates polynomial trial-by-trial alpha parameter values. Version 2 estimates sigmoidal trial-by-trial alpha values. 
+A Hierarchical Bayesian Model containing a trial-by-trial learning update parameter, alpha. Alpha can take the form of a polynomial (HBM_main_sims_polynomial.py) or sigmoid (HBM_main_sims_sigmoid.py). 
 
-## Main Model
-Contains the main scripts for running both versions of the model, and a class which defines the maximum a posteriori model. 
+MaximumAPosterioriModel.py contains the model, which encodes observations and latent random variables, and the guide, which defines the variational distribution.
 
-## Data Loading, Plotting, Saving
-Contains classes which load data, plot model results and save parameter estimates.  
+SetParameters.py contains the set of regression equations for calculation of parameter estimates that evolve stochastically from trial to trial. 
