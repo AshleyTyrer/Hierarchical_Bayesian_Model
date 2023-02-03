@@ -94,6 +94,8 @@ class MaximumAPosterioriModel:
             y_guide: behaviour/continuous learning in form: number of trials x timepoints"""
 
         N, T, p = x_guide.shape
+        w_prior = 10.0
+        midpoint_prior = 1.5
 
         # mean y
         meany = y_guide.flatten().mean()
@@ -115,7 +117,8 @@ class MaximumAPosterioriModel:
         beta_grad_init = (beta_end - beta_init) / (N - 1)
 
         # initial learning coefficients
-        w_init = torch.zeros((self.ncoeff,))
+        # w_init = torch.zeros((self.ncoeff,))
+        w_init = torch.tensor([w_prior])
 
         intercept_map = pyro.param("intercept_map", meany.clone().detach())
         beta_grad_map = pyro.param("beta_grad_map", beta_grad_init.clone().detach())
@@ -123,7 +126,8 @@ class MaximumAPosterioriModel:
         sigma_map = pyro.param("sigma_map", er.clone().detach())
         w_map = pyro.param("w_map", w_init.clone().detach(), constraint=constraints.interval(0.0, 100.0))
         if self.alpha_shape == 'sigmoid':
-            midpoint_init = torch.zeros((1,))
+            # midpoint_init = torch.zeros((1,))
+            midpoint_init = torch.tensor([midpoint_prior])
             midpoint_map = pyro.param("midpoint_map", midpoint_init.clone().detach(), constraint=constraints.interval(
                 0.0, 3.0))
 

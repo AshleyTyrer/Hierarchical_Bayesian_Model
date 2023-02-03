@@ -82,7 +82,7 @@ for w_sim, sigma_sim, midpoint_sim, run_num in loop_through_this:
     data_format.save_figure(w_true, sigma, midpoint_true, 'true')
     plt.close()
 
-    map_model.train(map_model.model_map, map_model.guide_map, X_train_torch, y_train_torch, lr=0.001)
+    map_model.train(map_model.model_map, map_model.guide_map, X_train_torch, y_train_torch, lr=0.0001)
     pyro.param("sigma_map")
 
     beta_grad_map = pyro.param("beta_grad_map").detach().numpy()
